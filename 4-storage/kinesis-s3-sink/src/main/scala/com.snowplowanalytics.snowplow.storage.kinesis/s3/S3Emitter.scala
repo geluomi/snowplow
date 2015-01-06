@@ -57,7 +57,7 @@ import com.amazonaws.services.kinesis.connectors.interfaces.IEmitter
  *
  * Once the buffer is full, the emit function is called.
  */
-class S3Emitter(config: KinesisConnectorConfiguration) extends IEmitter[ SnowplowRawEvent ] {
+class S3Emitter(config: KinesisConnectorConfiguration) extends IEmitter[ EmitterInput ] {
   val bucket = config.S3_BUCKET
   val log = LogFactory.getLog(classOf[S3Emitter])
   val client = new AmazonS3Client(config.AWS_CREDENTIALS_PROVIDER)
@@ -86,13 +86,13 @@ class S3Emitter(config: KinesisConnectorConfiguration) extends IEmitter[ Snowplo
    * failed to be written out to S3, under the assumption that
    * the operation will be retried at some point later.
    */
-  override def emit(buffer: UnmodifiableBuffer[ SnowplowRawEvent ]): java.util.List[ SnowplowRawEvent ] = {
+  override def emit(buffer: UnmodifiableBuffer[ EmitterInput ]): java.util.List[ EmitterInput ] = {
 
     log.info("Flushing buffer with " + buffer.getRecords.size + " records.")
 
-    val records = buffer.getRecords().asScala
+    val records = buffer.getRecords().asScala.toList
 
-    val (outputStream, indexOutputStream, lzoCodec) = LzoSerializer.serialize(records.toList)
+    val (outputStream, indexOutputStream, lzoCodec, results) = LzoSerializer.serialize(records)
 
     val filename = getFileName(buffer.getFirstSequenceNumber, buffer.getLastSequenceNumber, lzoCodec)
     val indexFilename = filename + ".index"
@@ -112,7 +112,7 @@ class S3Emitter(config: KinesisConnectorConfiguration) extends IEmitter[ Snowplo
       log.info("Successfully emitted " + buffer.getRecords.size + " records to S3 in s3://" + bucket + "/" + filename + " with index " + indexFilename)
 
       // Success means we return an empty list i.e. there are no failed items to retry
-      java.util.Collections.emptyList().asInstanceOf[ java.util.List[ SnowplowRawEvent ] ]
+      java.util.Collections.emptyList().asInstanceOf[ java.util.List[ EmitterInput ] ]
     } catch {
       case e: AmazonServiceException => {
         log.error(e)
@@ -127,10 +127,12 @@ class S3Emitter(config: KinesisConnectorConfiguration) extends IEmitter[ Snowplo
     client.shutdown
   }
 
-  override def fail(records: java.util.List[ SnowplowRawEvent ]) {
-    records.asScala.foreach { record =>
+  override def fail(records: java.util.List[ EmitterInput ]) {
+    /*records.asScala.foreach { record =>
       log.error("Record failed: " + record)
-    }
+      val output = compact(render(("line" -> record._1) ~ ("errors" -> record._2.swap.getOrElse(Nil))))
+      badSink.store(output, Some("key"), false)
+    }*/
   }
 
 }

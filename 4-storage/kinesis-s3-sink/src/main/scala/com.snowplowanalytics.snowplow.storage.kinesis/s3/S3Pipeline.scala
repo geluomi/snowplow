@@ -29,15 +29,15 @@ import com.snowplowanalytics.snowplow.collectors.thrift.SnowplowRawEvent
 /**
  * S3Pipeline class sets up the Emitter/Buffer/Transformer/Filter
  */
-class S3Pipeline extends IKinesisConnectorPipeline[ SnowplowRawEvent, SnowplowRawEvent ] {
+class S3Pipeline extends IKinesisConnectorPipeline[ ValidatedRecord, EmitterInput ] {
 
   override def getEmitter(configuration: KinesisConnectorConfiguration) = new S3Emitter(configuration)
 
-  override def getBuffer(configuration: KinesisConnectorConfiguration) = new BasicMemoryBuffer[SnowplowRawEvent](configuration)
+  override def getBuffer(configuration: KinesisConnectorConfiguration) = new BasicMemoryBuffer[ValidatedRecord](configuration)
 
   override def getTransformer(c: KinesisConnectorConfiguration) = new SnowplowRawEventTransformer()
 
-  override def getFilter(c: KinesisConnectorConfiguration) = new AllPassFilter[SnowplowRawEvent]()
+  override def getFilter(c: KinesisConnectorConfiguration) = new AllPassFilter[ValidatedRecord]()
 
 }
 

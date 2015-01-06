@@ -21,21 +21,35 @@ import com.amazonaws.services.kinesis.connectors.interfaces.ITransformer
 // Thrift libs
 import org.apache.thrift.{TSerializer,TDeserializer}
 
+// Apache commons
+import org.apache.commons.codec.binary.Base64
+
+// Scalaz
+import scalaz._
+import Scalaz._
+
 // Snowplow thrift
 import com.snowplowanalytics.snowplow.collectors.thrift.SnowplowRawEvent
 
 /**
  * Thrift serializer/deserializer class
  */
-class SnowplowRawEventTransformer extends ITransformer[ SnowplowRawEvent, SnowplowRawEvent ] {
+class SnowplowRawEventTransformer extends ITransformer[ ValidatedRecord, EmitterInput ] {
   lazy val serializer = new TSerializer()
   lazy val deserializer = new TDeserializer()
 
-  override def toClass(record: Record): SnowplowRawEvent = {
+  override def toClass(record: Record): ValidatedRecord = {
     var obj = new SnowplowRawEvent()
-    deserializer.deserialize(obj, record.getData().array())
-    obj
+    val recordByteArray = record.getData.array
+
+    // Include the original Thrift string in case the storage process fails
+    (new String(Base64.encodeBase64(recordByteArray)), try {
+      deserializer.deserialize(obj, recordByteArray)
+      obj.success
+    } catch {
+      case e: Throwable => List("Error deserializing raw event: [%s]".format(e.getMessage)).fail
+    })
   }
 
-  override def fromClass(record: SnowplowRawEvent) = record
+  override def fromClass(record: EmitterInput) = record
 }

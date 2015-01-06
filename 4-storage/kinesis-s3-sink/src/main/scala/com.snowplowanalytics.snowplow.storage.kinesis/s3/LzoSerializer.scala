@@ -34,6 +34,10 @@ import com.twitter.elephantbird.mapreduce.io.{
   ThriftBlockWriter
 }
 
+// Scalaz
+import scalaz._
+import Scalaz._
+
 // Snowplow
 import com.snowplowanalytics.snowplow.collectors.thrift.SnowplowRawEvent
 
@@ -61,7 +65,7 @@ object LzoSerializer {
   conf.set("io.compression.codecs", classOf[LzopCodec].getName)
   lzoCodec.setConf(conf)
 
-  def serialize(records: List[ SnowplowRawEvent ]): (ByteArrayOutputStream, ByteArrayOutputStream, LzopCodec) = {
+  def serialize(records: List[ EmitterInput ]): (ByteArrayOutputStream, ByteArrayOutputStream, LzopCodec, List[EmitterInput]) = {
 
     val indexOutputStream = new ByteArrayOutputStream()
     val outputStream = new ByteArrayOutputStream()
@@ -73,19 +77,22 @@ object LzoSerializer {
     val thriftBlockWriter = new ThriftBlockWriter[SnowplowRawEvent](lzoOutputStream, classOf[SnowplowRawEvent], records.size)    
 
     // Populate the output stream with records
-    records.foreach({ record =>
-      try {
-        thriftBlockWriter.write(record)
+    // TODO: 
+    val results = records.map({ record => try {
+        (record._1, record._2.map(r => {
+          thriftBlockWriter.write(r)
+          r
+        }))
       } catch {
         case e: IOException => {
           log.error(e)
-          records
+          (record._1, List("Error writing raw event to output stream: [%s]".format(e.toString)).fail)
         }
       }
     })
 
     thriftBlockWriter.close
 
-    (outputStream, indexOutputStream, lzoCodec)
+    (outputStream, indexOutputStream, lzoCodec, results)
   }
 }
