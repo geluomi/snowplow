@@ -11,7 +11,7 @@
  * See the Apache License Version 2.0 for the specific language governing permissions and limitations there under.
  */
 package com.snowplowanalytics.snowplow
-package storage.kinesiss3
+package storage.kinesis.s3
 
 // Java
 import java.util.Properties
