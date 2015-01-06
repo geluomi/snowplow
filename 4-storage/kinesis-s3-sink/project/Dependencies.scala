@@ -54,6 +54,7 @@ object Dependencies {
     // Scala
     val argot                = "org.clapper"                %% "argot"                    % V.argot
     val config               = "com.typesafe"               %  "config"                   % V.config
+    val scalazon             = "io.github.cloudify"         %% "scalazon"                 % V.scalazon
     val scalaz7              = "org.scalaz"                 %% "scalaz-core"              % V.scalaz7
     // Scala (test only)
     val specs2               = "org.specs2"                 %% "specs2"                   % V.specs2         % "test"

@@ -38,6 +38,7 @@ object SnowplowKinesisEnrichBuild extends Build {
         Libraries.slf4j,
         Libraries.hadoop,
         Libraries.elephantbird,
+        Libraries.scalazon,
         Libraries.snowplowRawEvent
       )
     )
