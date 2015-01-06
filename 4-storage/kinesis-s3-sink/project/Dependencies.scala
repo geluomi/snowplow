@@ -17,8 +17,7 @@ object Dependencies {
   val resolutionRepos = Seq(
     "Snowplow Analytics Maven releases repo" at "http://maven.snplow.com/releases/",
     "Snowplow Analytics Maven snapshot repo" at "http://maven.snplow.com/snapshots/",
-    "Twitter maven repo"                     at "http://maven.twttr.com/",
-    "aws-kinesis-connectors-mvn-repos"       at "https://raw.githubusercontent.com/pkallos/amazon-kinesis-connectors/mvn-repo/"
+    "Twitter maven repo"                     at "http://maven.twttr.com/"
   )
 
   object V {
@@ -26,7 +25,7 @@ object Dependencies {
     val logging              = "1.1.3"
     val slf4j                = "1.7.6"
     val kinesisClient        = "1.0.0"
-    val kinesisConnector     = "1.0.0" // TODO: bump to 1.1.1
+    val kinesisConnector     = "1.1.1"
     val hadoop               = "1.2.1"
     val elephantbird         = "4.5"
     val snowplowRawEvent     = "0.1.0" // TODO: bump to 0.2.0
