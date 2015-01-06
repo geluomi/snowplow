@@ -35,6 +35,7 @@ object Dependencies {
     val scalaUtil            = "0.1.0"
     val snowplowCommonEnrich = "0.9.0"
     val scalazon             = "0.5"
+    val json4s           = "3.2.11"
     val scalaz7              = "7.0.0"
     // Scala (test only)
     val specs2               = "2.2"
@@ -55,6 +56,7 @@ object Dependencies {
     val argot                = "org.clapper"                %% "argot"                    % V.argot
     val config               = "com.typesafe"               %  "config"                   % V.config
     val scalazon             = "io.github.cloudify"         %% "scalazon"                 % V.scalazon
+    val json4sJackson    = "org.json4s"                 %% "json4s-jackson"            % V.json4s
     val scalaz7              = "org.scalaz"                 %% "scalaz-core"              % V.scalaz7
     // Scala (test only)
     val specs2               = "org.specs2"                 %% "specs2"                   % V.specs2         % "test"

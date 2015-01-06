@@ -34,9 +34,6 @@ import com.twitter.elephantbird.mapreduce.io.{
   ThriftBlockWriter
 }
 
-// Snowplow
-import com.snowplowanalytics.snowplow.collectors.thrift.SnowplowRawEvent
-
 // Logging
 import org.apache.commons.logging.{Log,LogFactory}
 
@@ -51,6 +48,14 @@ import com.amazonaws.services.kinesis.connectors.{
   KinesisConnectorConfiguration
 }
 import com.amazonaws.services.kinesis.connectors.interfaces.IEmitter
+
+// json4s
+import org.json4s._
+import org.json4s.jackson.JsonMethods._
+import org.json4s.JsonDSL._
+
+// Snowplow
+import com.snowplowanalytics.snowplow.collectors.thrift.SnowplowRawEvent
 
 // This project
 import sinks._
@@ -131,11 +136,11 @@ class S3Emitter(config: KinesisConnectorConfiguration, badSink: ISink) extends I
   }
 
   override def fail(records: java.util.List[ EmitterInput ]) {
-    /*records.asScala.foreach { record =>
+    records.asScala.foreach { record =>
       log.error("Record failed: " + record)
       val output = compact(render(("line" -> record._1) ~ ("errors" -> record._2.swap.getOrElse(Nil))))
       badSink.store(output, Some("key"), false)
-    }*/
+    }
   }
 
 }
