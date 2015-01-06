@@ -22,14 +22,17 @@ import com.amazonaws.services.kinesis.connectors.{
   KinesisConnectorRecordProcessorFactory
 }
 
+// This project
+import sinks._
+
 /**
  * Boilerplate class for Kinessis Conenector
  */
-class S3SinkExecutor(config: KinesisConnectorConfiguration) extends KinesisConnectorExecutorBase[ ValidatedRecord, EmitterInput ] {
+class S3SinkExecutor(config: KinesisConnectorConfiguration, badSink: ISink) extends KinesisConnectorExecutorBase[ ValidatedRecord, EmitterInput ] {
   super.initialize(config)
 
   override def getKinesisConnectorRecordProcessorFactory = {
-    new KinesisConnectorRecordProcessorFactory[ ValidatedRecord, EmitterInput ](new S3Pipeline(), config)
+    new KinesisConnectorRecordProcessorFactory[ ValidatedRecord, EmitterInput ](new S3Pipeline(badSink), config)
   }
 
 }

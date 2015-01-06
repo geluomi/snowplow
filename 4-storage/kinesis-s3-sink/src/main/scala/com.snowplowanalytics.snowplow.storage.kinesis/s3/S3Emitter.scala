@@ -52,12 +52,15 @@ import com.amazonaws.services.kinesis.connectors.{
 }
 import com.amazonaws.services.kinesis.connectors.interfaces.IEmitter
 
+// This project
+import sinks._
+
 /**
  * Emitter for flushing Kinesis event data to S3.
  *
  * Once the buffer is full, the emit function is called.
  */
-class S3Emitter(config: KinesisConnectorConfiguration) extends IEmitter[ EmitterInput ] {
+class S3Emitter(config: KinesisConnectorConfiguration, badSink: ISink) extends IEmitter[ EmitterInput ] {
   val bucket = config.S3_BUCKET
   val log = LogFactory.getLog(classOf[S3Emitter])
   val client = new AmazonS3Client(config.AWS_CREDENTIALS_PROVIDER)

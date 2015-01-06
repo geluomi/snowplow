@@ -26,12 +26,15 @@ import com.amazonaws.services.kinesis.connectors.impl.{BasicMemoryBuffer,AllPass
 // Snowplow Thrift
 import com.snowplowanalytics.snowplow.collectors.thrift.SnowplowRawEvent
 
+// This project
+import sinks._
+
 /**
  * S3Pipeline class sets up the Emitter/Buffer/Transformer/Filter
  */
-class S3Pipeline extends IKinesisConnectorPipeline[ ValidatedRecord, EmitterInput ] {
+class S3Pipeline(badSink: ISink) extends IKinesisConnectorPipeline[ ValidatedRecord, EmitterInput ] {
 
-  override def getEmitter(configuration: KinesisConnectorConfiguration) = new S3Emitter(configuration)
+  override def getEmitter(configuration: KinesisConnectorConfiguration) = new S3Emitter(configuration, badSink)
 
   override def getBuffer(configuration: KinesisConnectorConfiguration) = new BasicMemoryBuffer[ValidatedRecord](configuration)
 

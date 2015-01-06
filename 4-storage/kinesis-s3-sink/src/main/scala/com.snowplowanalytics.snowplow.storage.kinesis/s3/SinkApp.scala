@@ -28,6 +28,9 @@ import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 // AWS Kinesis Connector libs
 import com.amazonaws.services.kinesis.connectors.KinesisConnectorConfiguration
 
+// This project
+import sinks._
+
 /**
  * The entrypoint class for the Kinesis-S3 Sink applciation.
  */
@@ -61,7 +64,16 @@ object SinkApp extends App {
 
   val conf = config.value.getOrElse(ConfigFactory.load("default")) // Fall back to the /resources/default.conf
 
-  val executor = new S3SinkExecutor(convertConfig(conf))
+  // TODO: make the conf file more like the Elasticsearch equivalent
+  val kinesisSinkRegion = conf.getConfig("connector").getConfig("kinesis").getString("region")
+  val kinesisSinkEndpoint = s"https://kinesis.${kinesisSinkRegion}.amazonaws.com"
+  val kinesisSink = conf.getConfig("connector").getConfig("kinesis").getConfig("out")
+  val kinesisSinkName = kinesisSink.getString("stream-name")
+  val kinesisSinkShards = kinesisSink.getInt("shards")
+
+  val badSink = new KinesisSink(new DefaultAWSCredentialsProviderChain, kinesisSinkEndpoint, kinesisSinkName, kinesisSinkShards)
+
+  val executor = new S3SinkExecutor(convertConfig(conf), badSink)
   executor.run()
 
   /**
