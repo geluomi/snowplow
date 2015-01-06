@@ -9,6 +9,11 @@ connector {
     endpoint: "https://kinesis.us-east-1.amazonaws.com"
     stream-name: "" # Kinesis stream name
     app-name: "" # App name for this consumer
+
+    out {
+      stream-name: "s3-raw-sink-errors"
+      shards: 1
+    }
   }
 
   s3 {
