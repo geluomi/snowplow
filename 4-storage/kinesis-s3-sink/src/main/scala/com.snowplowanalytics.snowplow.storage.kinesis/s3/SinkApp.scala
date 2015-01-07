@@ -43,13 +43,17 @@ object SinkApp extends App {
   val parser = new ArgotParser(
     programName = "generated",
     compactUsage = true,
-    preUsage = Some("Meow")
+    preUsage = Some("%s: Version %s. Copyright (c) 2013, %s.".format(
+      generated.Settings.name,
+      generated.Settings.version,
+      generated.Settings.organization)
+    )
   )
 
   // Optional config argument
   val config = parser.option[Config](List("config"),
                                      "filename",
-                                     "Configuration file. Defaults to \"resources/default.conf\" (within .jar) if not set") {
+                                     "Configuration file.") {
     (c, opt) =>
 
       val file = new File(c)
@@ -62,7 +66,7 @@ object SinkApp extends App {
   }
   parser.parse(args)
 
-  val conf = config.value.getOrElse(ConfigFactory.load("default")) // Fall back to the /resources/default.conf
+  val conf = config.value.getOrElse(throw new RuntimeException("--config argument must be provided"))
 
   // TODO: make the conf file more like the Elasticsearch equivalent
   val kinesisSinkRegion = conf.getConfig("connector").getConfig("kinesis").getString("region")
