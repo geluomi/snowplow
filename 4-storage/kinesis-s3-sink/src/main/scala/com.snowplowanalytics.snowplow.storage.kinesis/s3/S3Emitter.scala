@@ -145,8 +145,7 @@ class S3Emitter(config: KinesisConnectorConfiguration, badSink: ISink) extends I
         client.putObject(bucket, indexFilename, indexObj, indexObjMeta)
         log.info("Successfully emitted " + successes.size + " records to S3 in s3://" + bucket + "/" + filename + " with index " + indexFilename)
 
-        // Success means we return an empty list i.e. there are no failed items to retry
-        java.util.Collections.emptyList().asInstanceOf[ java.util.List[ EmitterInput ] ]
+        // Return the failed records
         failures
       } catch {
         // Retry on failure
@@ -163,7 +162,11 @@ class S3Emitter(config: KinesisConnectorConfiguration, badSink: ISink) extends I
       }
     }
 
-    attemptEmit()
+    if (successes.size > 0) {
+      attemptEmit()
+    } else {
+      failures
+    }
   }
 
   override def shutdown() {
