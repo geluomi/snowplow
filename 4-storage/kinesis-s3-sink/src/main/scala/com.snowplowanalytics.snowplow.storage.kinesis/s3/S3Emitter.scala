@@ -170,7 +170,7 @@ class S3Emitter(config: KinesisConnectorConfiguration, badSink: ISink) extends I
 
   override def fail(records: java.util.List[ EmitterInput ]) {
     records.asScala.foreach { record =>
-      log.error("Record failed: " + record)
+      log.warn("Record failed: " + record)
       val output = compact(render(("line" -> record._1) ~ ("errors" -> record._2.swap.getOrElse(Nil))))
       badSink.store(output, Some("key"), false)
     }

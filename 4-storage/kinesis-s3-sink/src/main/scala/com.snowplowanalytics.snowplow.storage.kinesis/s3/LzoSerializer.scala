@@ -77,7 +77,6 @@ object LzoSerializer {
     val thriftBlockWriter = new ThriftBlockWriter[SnowplowRawEvent](lzoOutputStream, classOf[SnowplowRawEvent], records.size)    
 
     // Populate the output stream with records
-    // TODO: 
     val results = records.map({ record => try {
         (record._1, record._2.map(r => {
           thriftBlockWriter.write(r)
@@ -85,7 +84,7 @@ object LzoSerializer {
         }))
       } catch {
         case e: IOException => {
-          log.error(e)
+          log.warn(e)
           (record._1, List("Error writing raw event to output stream: [%s]".format(e.toString)).fail)
         }
       }
