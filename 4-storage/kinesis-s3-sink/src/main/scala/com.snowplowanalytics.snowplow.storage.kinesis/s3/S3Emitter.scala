@@ -129,7 +129,9 @@ class S3Emitter(config: KinesisConnectorConfiguration, badSink: ISink) extends I
     objMeta.setContentLength(outputStream.size)
     indexObjMeta.setContentLength(indexOutputStream.size)
 
-    val failures = results.filter(_._2.isFailure)
+    val (successes, failures) = results.partition(_._2.isSuccess)
+
+    log.info("Successfully serialized " + successes.size + " records out of " + successes.size + failures.size)
 
     /**
      * Keep attempting to send the data to S3 until it succeeds
@@ -141,7 +143,7 @@ class S3Emitter(config: KinesisConnectorConfiguration, badSink: ISink) extends I
       try {
         client.putObject(bucket, filename, obj, objMeta)
         client.putObject(bucket, indexFilename, indexObj, indexObjMeta)
-        log.info("Successfully emitted " + (buffer.getRecords.size - failures.size) + " records to S3 in s3://" + bucket + "/" + filename + " with index " + indexFilename)
+        log.info("Successfully emitted " + successes.size + " records to S3 in s3://" + bucket + "/" + filename + " with index " + indexFilename)
 
         // Success means we return an empty list i.e. there are no failed items to retry
         java.util.Collections.emptyList().asInstanceOf[ java.util.List[ EmitterInput ] ]
