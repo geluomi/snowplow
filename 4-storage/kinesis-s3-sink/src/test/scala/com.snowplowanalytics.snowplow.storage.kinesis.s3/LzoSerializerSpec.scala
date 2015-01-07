@@ -36,6 +36,10 @@ import com.amazonaws.services.kinesis.connectors.impl.BasicMemoryBuffer
 import com.twitter.elephantbird.mapreduce.io.ThriftBlockReader
 import com.twitter.elephantbird.util.TypeRef
 
+// Scalaz
+import scalaz._
+import Scalaz._
+
 // Scala
 import scala.sys.process._
 import scala.collection.JavaConversions._
@@ -67,7 +71,7 @@ class LzoSerializerSpec extends Specification with ValidationMatchers {
 
       cleanup()
 
-      val inputEvents = List(new SnowplowRawEvent(1000, "a", "b", "c"), new SnowplowRawEvent(2000, "x", "y", "z"))
+      val inputEvents = List(("raw1", new SnowplowRawEvent(1000, "a", "b", "c").success), ("raw1", new SnowplowRawEvent(2000, "x", "y", "z").success))
 
       val lzoOutput = LzoSerializer.serialize(inputEvents)._1
 
@@ -81,8 +85,8 @@ class LzoSerializerSpec extends Specification with ValidationMatchers {
 
       cleanup()
 
-      reader.readNext() must_== inputEvents(0)
-      reader.readNext() must_== inputEvents(1)
+      reader.readNext().success must_== inputEvents(0)._2
+      reader.readNext().success must_== inputEvents(1)._2
     }
   }
 }
