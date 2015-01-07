@@ -111,7 +111,7 @@ class S3Emitter(config: KinesisConnectorConfiguration, badSink: ISink) extends I
    */
   override def emit(buffer: UnmodifiableBuffer[ EmitterInput ]): java.util.List[ EmitterInput ] = {
 
-    log.info("Flushing buffer with " + buffer.getRecords.size + " records.")
+    log.info(s"Flushing buffer with ${buffer.getRecords.size} records.")
 
     val records = buffer.getRecords().asScala.toList
 
@@ -131,7 +131,7 @@ class S3Emitter(config: KinesisConnectorConfiguration, badSink: ISink) extends I
 
     val (successes, failures) = results.partition(_._2.isSuccess)
 
-    log.info("Successfully serialized " + successes.size + " records out of " + successes.size + failures.size)
+    log.info(s"Successfully serialized ${successes.size} records out of ${successes.size + failures.size}")
 
     /**
      * Keep attempting to send the data to S3 until it succeeds
@@ -143,7 +143,7 @@ class S3Emitter(config: KinesisConnectorConfiguration, badSink: ISink) extends I
       try {
         client.putObject(bucket, filename, obj, objMeta)
         client.putObject(bucket, indexFilename, indexObj, indexObjMeta)
-        log.info("Successfully emitted " + successes.size + " records to S3 in s3://" + bucket + "/" + filename + " with index " + indexFilename)
+        log.info(s"Successfully emitted ${successes.size} records to S3 in s3://${bucket}/${filename} with index $indexFilename")
 
         // Return the failed records
         failures
@@ -175,7 +175,8 @@ class S3Emitter(config: KinesisConnectorConfiguration, badSink: ISink) extends I
 
   override def fail(records: java.util.List[ EmitterInput ]) {
     records.asScala.foreach { record =>
-      log.warn("Record failed: " + record)
+      log.warn(s"Record failed: $record")
+      log.info("Sending failed record to Kinesis")
       val output = compact(render(("line" -> record._1) ~ ("errors" -> record._2.swap.getOrElse(Nil))))
       badSink.store(output, Some("key"), false)
     }
