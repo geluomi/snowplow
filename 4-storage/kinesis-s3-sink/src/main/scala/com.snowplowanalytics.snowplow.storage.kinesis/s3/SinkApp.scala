@@ -89,8 +89,11 @@ object SinkApp extends App {
     val secretKey = aws.getString("secret-key")
 
     val kinesis = connector.getConfig("kinesis")
-    val kEndpoint = kinesis.getString("endpoint")
-    val streamName = kinesis.getString("stream-name")
+    val kinesisIn = kinesis.getConfig("in")
+    val kinesisRegion = kinesis.getString("region")
+    val kEndpoint = s"https://kinesis.${kinesisSinkRegion}.amazonaws.com"
+    val streamName = kinesisIn.getString("stream-name")
+    val initialPosition = kinesisIn.getString("initial-position")
     val appName = kinesis.getString("app-name")
 
     val s3 = connector.getConfig("s3")
@@ -100,18 +103,22 @@ object SinkApp extends App {
     val buffer = connector.getConfig("buffer")
     val byteLimit = buffer.getString("byte-limit")
     val recordLimit = buffer.getString("record-limit")
+    val timeLimit = buffer.getString("time-limit")
 
     props.setProperty(KinesisConnectorConfiguration.PROP_KINESIS_INPUT_STREAM, streamName)
     props.setProperty(KinesisConnectorConfiguration.PROP_KINESIS_ENDPOINT, kEndpoint)
     props.setProperty(KinesisConnectorConfiguration.PROP_APP_NAME, appName)
+    props.setProperty(KinesisConnectorConfiguration.PROP_INITIAL_POSITION_IN_STREAM, initialPosition)
 
     props.setProperty(KinesisConnectorConfiguration.PROP_S3_ENDPOINT, s3Endpoint)
     props.setProperty(KinesisConnectorConfiguration.PROP_S3_BUCKET, bucket)
 
     props.setProperty(KinesisConnectorConfiguration.PROP_BUFFER_BYTE_SIZE_LIMIT, byteLimit)
     props.setProperty(KinesisConnectorConfiguration.PROP_BUFFER_RECORD_COUNT_LIMIT, recordLimit)
+    props.setProperty(KinesisConnectorConfiguration.PROP_BUFFER_MILLISECONDS_LIMIT, timeLimit)
 
     props.setProperty(KinesisConnectorConfiguration.PROP_MAX_RECORDS, "10000")
+    props.setProperty(KinesisConnectorConfiguration.PROP_CONNECTOR_DESTINATION, "s3")
 
     new KinesisConnectorConfiguration(props, new DefaultAWSCredentialsProviderChain())
   }
