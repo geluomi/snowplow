@@ -49,6 +49,14 @@ import com.amazonaws.services.kinesis.connectors.{
 }
 import com.amazonaws.services.kinesis.connectors.interfaces.IEmitter
 
+// Scala
+import scala.collection.JavaConversions._
+import scala.annotation.tailrec
+
+// Scalaz
+import scalaz._
+import Scalaz._
+
 // json4s
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -66,6 +74,13 @@ import sinks._
  * Once the buffer is full, the emit function is called.
  */
 class S3Emitter(config: KinesisConnectorConfiguration, badSink: ISink) extends IEmitter[ EmitterInput ] {
+
+  /**
+   * The amount of time to wait in between unsuccessful index requests (in milliseconds).
+   * 10 seconds = 10 * 1000 = 10000
+   */
+  private val BackoffPeriod = 10000
+
   val bucket = config.S3_BUCKET
   val log = LogFactory.getLog(classOf[S3Emitter])
   val client = new AmazonS3Client(config.AWS_CREDENTIALS_PROVIDER)
@@ -114,21 +129,39 @@ class S3Emitter(config: KinesisConnectorConfiguration, badSink: ISink) extends I
     objMeta.setContentLength(outputStream.size)
     indexObjMeta.setContentLength(indexOutputStream.size)
 
-    try {
-      client.putObject(bucket, filename, obj, objMeta)
-      client.putObject(bucket, indexFilename, indexObj, indexObjMeta)
-      log.info("Successfully emitted " + buffer.getRecords.size + " records to S3 in s3://" + bucket + "/" + filename + " with index " + indexFilename)
+    val failures = results.filter(_._2.isFailure)
 
-      // Success means we return an empty list i.e. there are no failed items to retry
-      java.util.Collections.emptyList().asInstanceOf[ java.util.List[ EmitterInput ] ]
-    } catch {
-      case e: AmazonServiceException => {
-        log.error(e)
-        // This is a failure case, return the buffer items so that we can retry
-        buffer.getRecords
+    /**
+     * Keep attempting to send the data to S3 until it succeeds
+     *
+     * @return list of inputs which failed to be sent to S3
+     */
+    @tailrec
+    def attemptEmit(): List[EmitterInput] = {
+      try {
+        client.putObject(bucket, filename, obj, objMeta)
+        client.putObject(bucket, indexFilename, indexObj, indexObjMeta)
+        log.info("Successfully emitted " + (buffer.getRecords.size - failures.size) + " records to S3 in s3://" + bucket + "/" + filename + " with index " + indexFilename)
+
+        // Success means we return an empty list i.e. there are no failed items to retry
+        java.util.Collections.emptyList().asInstanceOf[ java.util.List[ EmitterInput ] ]
+        failures
+      } catch {
+        // Retry on failure
+        case ase: AmazonServiceException => {
+          log.error("S3 could not process the request", ase)
+          sleep(BackoffPeriod)
+          attemptEmit()
+        }
+        case e: Throwable => {
+          log.error("S3Emitter threw an unexpected exception", e)
+          sleep(BackoffPeriod)
+          attemptEmit()
+        }
       }
     }
 
+    attemptEmit()
   }
 
   override def shutdown() {
@@ -140,6 +173,19 @@ class S3Emitter(config: KinesisConnectorConfiguration, badSink: ISink) extends I
       log.error("Record failed: " + record)
       val output = compact(render(("line" -> record._1) ~ ("errors" -> record._2.swap.getOrElse(Nil))))
       badSink.store(output, Some("key"), false)
+    }
+  }
+
+  /**
+   * Period between retrying sending events to S3
+   *
+   * @param sleepTime Length of time between tries
+   */
+  private def sleep(sleepTime: Long): Unit = {
+    try {
+      Thread.sleep(sleepTime)
+    } catch {
+      case e: InterruptedException => ()
     }
   }
 

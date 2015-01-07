@@ -117,8 +117,10 @@ object SinkApp extends App {
     props.setProperty(KinesisConnectorConfiguration.PROP_BUFFER_RECORD_COUNT_LIMIT, recordLimit)
     props.setProperty(KinesisConnectorConfiguration.PROP_BUFFER_MILLISECONDS_LIMIT, timeLimit)
 
-    props.setProperty(KinesisConnectorConfiguration.PROP_MAX_RECORDS, "10000")
     props.setProperty(KinesisConnectorConfiguration.PROP_CONNECTOR_DESTINATION, "s3")
+
+    // The emit method retries sending to S3 indefinitely, so it only needs to be called once
+    props.setProperty(KinesisConnectorConfiguration.PROP_RETRY_LIMIT, "1")
 
     new KinesisConnectorConfiguration(props, new DefaultAWSCredentialsProviderChain())
   }
