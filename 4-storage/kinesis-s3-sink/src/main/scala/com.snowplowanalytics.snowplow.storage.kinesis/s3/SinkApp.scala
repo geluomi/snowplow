@@ -83,6 +83,9 @@ object SinkApp extends App {
   /**
    * This function converts the config file into the format
    * expected by the Kinesis connector interfaces.
+   *
+   * @param connector The configuration HOCON
+   * @return A KinesisConnectorConfiguration
    */
   def convertConfig(conf: Config): KinesisConnectorConfiguration = {
     val props = new Properties()

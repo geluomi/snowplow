@@ -56,6 +56,9 @@ import com.amazonaws.services.kinesis.connectors.{
 }
 import com.amazonaws.services.kinesis.connectors.interfaces.IEmitter
 
+/**
+ * Object to handle LZO compression of raw events
+ */
 object LzoSerializer {
 
   val log = LogFactory.getLog(getClass)
@@ -65,6 +68,15 @@ object LzoSerializer {
   conf.set("io.compression.codecs", classOf[LzopCodec].getName)
   lzoCodec.setConf(conf)
 
+  /**
+   * Compress a list of Snowplow events
+   *
+   * @param records List of deserialized records
+   * @return Tuple4 containing: the output stream for the .lzo file
+   *                            the output stream for the .lzo.index file
+   *                            the compression codec
+   *                            the list of events
+   */
   def serialize(records: List[ EmitterInput ]): (ByteArrayOutputStream, ByteArrayOutputStream, LzopCodec, List[EmitterInput]) = {
 
     val indexOutputStream = new ByteArrayOutputStream()

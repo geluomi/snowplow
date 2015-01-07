@@ -106,8 +106,11 @@ class S3Emitter(config: KinesisConnectorConfiguration, badSink: ISink) extends I
    * Reads items from a buffer and saves them to s3.
    *
    * This method is expected to return a List of items that
-   * failed to be written out to S3, under the assumption that
-   * the operation will be retried at some point later.
+   * failed to be written out to S3, which will be sent to
+   * a Kinesis stream for bad events.
+   *
+   * @param buffer BasicMemoryBuffer containing EmitterInputs
+   * @return list of inputs which failed transformation
    */
   override def emit(buffer: UnmodifiableBuffer[ EmitterInput ]): java.util.List[ EmitterInput ] = {
 
@@ -169,10 +172,19 @@ class S3Emitter(config: KinesisConnectorConfiguration, badSink: ISink) extends I
     }
   }
 
+  /**
+   * Closes the client when the KinesisConnectorRecordProcessor is shut down
+   */
   override def shutdown() {
     client.shutdown
   }
 
+  /**
+   * Sends records which fail deserialization or compression
+   * to Kinesis with an error message
+   *
+   * @param records List of failed records to send to Kinesis
+   */
   override def fail(records: java.util.List[ EmitterInput ]) {
     records.asScala.foreach { record =>
       log.warn(s"Record failed: $record")
