@@ -25,6 +25,12 @@ import Scalaz._
 
 // Scalding
 import com.twitter.scalding._
+import com.twitter.scalding.commons.source._
+
+// Cascading
+import cascading.tuple.Fields
+import cascading.tap.SinkMode
+import cascading.pipe.Pipe
 
 // Snowplow Common Enrich
 import common._
@@ -40,6 +46,9 @@ import common.outputs.{
   EnrichedEvent,
   BadRow
 }
+
+// Snowplow
+import com.snowplowanalytics.snowplow.collectors.thrift.SnowplowRawEvent
 
 // This project
 import utils.FileUtils
@@ -149,9 +158,14 @@ class EtlJob(args: Args) extends Job(args) {
   }
 
   // Aliases for our job
-  val input = MultipleTextLineFiles(etlConfig.inFolder).read
+  //val input = MultipleTextLineFiles(etlConfig.inFolder).read
+  val input = getInputPipe(etlConfig.inFormat, etlConfig.inFolder)
   val goodOutput = Tsv(etlConfig.outFolder)
   val badOutput = Tsv(etlConfig.badFolder)
+
+  // TODO: remove this when common-enrich ThriftLoader
+  // is able to convert SnowPlowRawEvents
+  lazy val serializer = new org.apache.thrift.TSerializer();
 
   // Do we add a failure trap?
   val trappableInput = etlConfig.exceptionsFolder match {
@@ -162,8 +176,16 @@ class EtlJob(args: Args) extends Job(args) {
   // Scalding data pipeline
   // TODO: let's fix this Any typing
   val common = trappableInput
-    .map('line -> 'all) { l: Any =>
-      EtlPipeline.processEvents(enrichmentRegistry, EtlJob.etlVersion, etlConfig.etlTstamp, loader.toCollectorPayload(l))
+    .map('line -> 'all) { l: Any => {
+        val b = {
+          if (l.isInstanceOf[SnowplowRawEvent])
+            serializer.serialize(l.asInstanceOf[SnowplowRawEvent])
+          else {
+            l
+          }
+        }
+        EtlPipeline.processEvents(enrichmentRegistry, EtlJob.etlVersion, etlConfig.etlTstamp, loader.toCollectorPayload(b))
+      }
     }
 
   // Handle bad rows
@@ -186,4 +208,12 @@ class EtlJob(args: Args) extends Job(args) {
     } // : List[EnrichedEvent]
     .unpackTo[EnrichedEvent]('events -> '*)
     .write(goodOutput) // N EnrichedEvents as tuples
+
+  def getInputPipe(format: String, path: String): Pipe = {
+    import TDsl._
+    format match {
+      case "thrift-raw" => LzoThriftSource(path).toPipe('line)
+      case _ => MultipleTextLineFiles(path).read
+    }
+  }
 }
