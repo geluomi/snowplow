@@ -1,5 +1,5 @@
  /*
- * Copyright (c) 2014 Snowplow Analytics Ltd.
+ * Copyright (c) 2015 Snowplow Analytics Ltd.
  * All rights reserved.
  *
  * This program is licensed to you under the Apache License Version 2.0,
@@ -29,12 +29,14 @@ import com.snowplowanalytics.snowplow.collectors.thrift.SnowplowRawEvent
 package object s3 {
 
   /**
-   * The original tab separated enriched event together with
-   * a validated CollectorPayload created from it (or list of errors
-   * if the creation process failed)
-   * Can't use NonEmptyList as it isn't serializable
+   * Tuple containing:
+   *  - the original Kinesis record, base 64 encoded
+   *  - a validated SnowplowRawEvent created from it
    */
   type ValidatedRecord = (String, Validation[List[String], SnowplowRawEvent])
 
+  /**
+   * Currently the same as ValidatedRecord, but could change in the future
+   */
   type EmitterInput = (String, Validation[List[String], SnowplowRawEvent])
 }
